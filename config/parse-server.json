@@ -1,0 +1,17 @@
+{
+  "databaseURI": "mongodb://mongo:27017/parsedb",
+  "appId": "myAppId",
+  "masterKey": "myMasterKey",
+  "serverURL": "http://parse-server:1337/parse",
+  "publicServerURL": "http://localhost:1337/parse",
+  "appName": "MyParseApp",
+  "port": 1337,
+  "mountPath": "/parse",
+  "allowClientClassCreation": false,
+  "enableAnonymousUsers": true,
+  "masterKeyIps": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "logLevel": "info"
+}

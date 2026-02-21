@@ -1,0 +1,48 @@
+services:
+  mongo:
+    image: mongo:8.2.5
+    container_name: mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - parse_network
+
+  parse-server:
+    image: parseplatform/parse-server:9.2.0
+    container_name: parse-server
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "1337:1337"
+    volumes:
+      - ./config/parse-server.json:/parse-server/config.json:ro
+    environment:
+      - PARSE_DASHBOARD_ALLOW_INSECURE_HTTP=1
+    command: /parse-server/config.json
+    networks:
+      - parse_network
+
+  parse-dashboard:
+    image: parseplatform/parse-dashboard:9.0.0
+    container_name: parse-dashboard
+    restart: unless-stopped
+    depends_on:
+      - parse-server
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./config/parse-dashboard.json:/src/Parse-Dashboard/parse-dashboard-config.json:ro
+    environment:
+      - PARSE_DASHBOARD_ALLOW_INSECURE_HTTP=1
+    networks:
+      - parse_network
+
+volumes:
+  mongo_data:
+
+
+networks:
+  parse_network:
+    driver: bridge
