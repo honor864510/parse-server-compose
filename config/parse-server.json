@@ -2,6 +2,7 @@
   "databaseURI": "mongodb://mongo:27017/parsedb",
   "appId": "myAppId",
   "masterKey": "myMasterKey",
+  "restAPIKey": "123",
   "serverURL": "http://parse-server:1337/parse",
   "publicServerURL": "http://192.168.1.73:1337/parse",
   "appName": "MyParseApp",
