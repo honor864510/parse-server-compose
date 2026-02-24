@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "serverURL": "http://localhost:1337/parse",
+      "serverURL": "http://192.168.1.73:1337/parse",
       "appId": "myAppId",
       "masterKey": "myMasterKey",
       "appName": "MyParseApp"

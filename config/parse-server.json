@@ -3,7 +3,7 @@
   "appId": "myAppId",
   "masterKey": "myMasterKey",
   "serverURL": "http://parse-server:1337/parse",
-  "publicServerURL": "http://localhost:1337/parse",
+  "publicServerURL": "http://192.168.1.73:1337/parse",
   "appName": "MyParseApp",
   "port": 1337,
   "mountPath": "/parse",
