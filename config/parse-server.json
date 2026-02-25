@@ -14,5 +14,6 @@
     "0.0.0.0/0",
     "::/0"
   ],
-  "logLevel": "info"
+  "logLevel": "info",
+  "cloud": "/parse-server/cloud/main.js"
 }

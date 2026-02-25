@@ -18,6 +18,7 @@ services:
       - "1337:1337"
     volumes:
       - ./config/parse-server.json:/parse-server/config.json:ro
+      - ./cloud/:/parse-server/cloud/:ro
     command: /parse-server/config.json
     networks:
       - parse_network
