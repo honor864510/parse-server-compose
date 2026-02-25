@@ -48,7 +48,7 @@ The `SyncQueue` class is the core of the sync mechanism. Parse Server populates 
 | `targetObjectId` | String | `objectId` of the changed Parse object |
 | `targetClass` | String | Class name of the changed object |
 | `actionType` | Number | `1` = CREATE, `2` = UPDATE, `3` = DELETE |
-| `status` | Number | `0` = pending, `1` = processing, `2` = done |
+| `status` | Number | `0` = pending, `1` = done |
 | `priority` | Number | `1` = header table, `2` = line items (`*_Items` tables) |
 | `externalId` | String | GUID from 1C — snapshot stored at write time, critical for DELETE |
 | `createdAt` | Date | Parse auto-managed |
@@ -58,10 +58,8 @@ The `SyncQueue` class is the core of the sync mechanism. Parse Server populates 
 
 When an object changes, Cloud Code checks for an existing `SyncQueue` entry for that `targetObjectId`:
 
-- **Existing entry is `pending` (0)** → update `updatedAt` only, no new entry
-- **Existing entry is `processing` (1)** → create a new `pending` entry (change arrived mid-batch)
-- **Existing entry is `done` (2)** → create a new `pending` entry
-- **No existing entry** → create a new `pending` entry
+- **Existing entry is `pending` (0)** → touch it (update `actionType`, `externalId`, `updatedAt`), no new entry
+- **Existing entry is `done` (1) or no entry** → create a new `pending` entry
 
 ### Class Filtering
 
@@ -174,6 +172,9 @@ Called by 1C after it has stored the batch locally.
  |<-- { updated: N } --------------|
 ```
 
+Entries remain `pending` until 1C explicitly confirms. If the HTTP response is lost,
+1C simply calls `fetchSyncBatch` again and receives the same batch.
+
 ---
 
 ## Security
@@ -201,8 +202,7 @@ Do this once in Parse Dashboard or via the REST API:
 
 **4. Apply the schema** — import `SyncQueue.json` via Dashboard → Schema → Import, or via REST:
 
-```
-<!-- OR "PUT" -->
+```bash
 curl -X POST http://192.168.1.73:1337/parse/schemas/SyncQueue \
   -H "X-Parse-Application-Id: myAppId" \
   -H "X-Parse-Master-Key: myMasterKey" \

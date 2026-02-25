@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 
 const ACTION = { CREATE: 1, UPDATE: 2, DELETE: 3 };
-const STATUS = { PENDING: 0, PROCESSING: 1, DONE: 2 };
+const STATUS = { PENDING: 0, DONE: 1 };
 const PRIORITY = { HEADER: 1, LINE_ITEM: 2 };
 const SYNC_QUEUE_CLASS = "SyncQueue";
 const BATCH_SIZE = 1000;
@@ -32,19 +32,17 @@ function getPriority(className) {
 
 /**
  * Core upsert logic for SyncQueue.
- * - If a PENDING entry exists for targetObjectId → update updatedAt (touch)
- * - If a PROCESSING entry exists → create a new PENDING entry
+ * - If a PENDING entry exists for targetObjectId → touch it (update actionType + externalId)
  * - Otherwise → create a new PENDING entry
  */
 async function enqueueSyncEntry({ targetObjectId, targetClass, actionType, externalId }) {
   const query = new Parse.Query(SYNC_QUEUE_CLASS);
   query.equalTo("targetObjectId", targetObjectId);
-  query.containedIn("status", [STATUS.PENDING, STATUS.PROCESSING]);
-  query.descending("createdAt");
+  query.equalTo("status", STATUS.PENDING);
 
   const existing = await query.first({ useMasterKey: true });
 
-  if (existing && existing.get("status") === STATUS.PENDING) {
+  if (existing) {
     // Touch the entry so updatedAt reflects the latest change time
     // Also update actionType in case it changed (e.g. CREATE then UPDATE)
     existing.set("actionType", actionType);
@@ -53,7 +51,7 @@ async function enqueueSyncEntry({ targetObjectId, targetClass, actionType, exter
     return;
   }
 
-  // Either no entry, or existing is PROCESSING — create a new PENDING entry
+  // No pending entry — create a new one
   const SyncQueue = Parse.Object.extend(SYNC_QUEUE_CLASS);
   const entry = new SyncQueue();
   entry.set("targetObjectId", targetObjectId);
@@ -148,7 +146,7 @@ registerAllTriggers();
 // ---------------------------------------------------------------------------
 // Called by 1C to retrieve the next batch of pending changes.
 // Returns up to BATCH_SIZE entries sorted by priority ASC, updatedAt ASC.
-// Marks returned entries as PROCESSING.
+// Status is NOT changed — entries remain PENDING until 1C confirms.
 //
 // Request: no parameters
 // Response: array of SyncQueue entry plain objects
@@ -162,20 +160,11 @@ Parse.Cloud.define("fetchSyncBatch", async (request) => {
 
   const entries = await query.find({ useMasterKey: true });
 
-  if (entries.length === 0) {
-    return [];
-  }
-
-  // Mark all as PROCESSING
-  entries.forEach((e) => e.set("status", STATUS.PROCESSING));
-  await Parse.Object.saveAll(entries, { useMasterKey: true });
-
   return entries.map((e) => ({
     objectId: e.id,
     targetObjectId: e.get("targetObjectId"),
     targetClass: e.get("targetClass"),
     actionType: e.get("actionType"),
-    status: e.get("status"),
     priority: e.get("priority"),
     externalId: e.get("externalId") || null,
     updatedAt: e.updatedAt,
